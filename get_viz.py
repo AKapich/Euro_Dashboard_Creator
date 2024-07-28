@@ -10,11 +10,12 @@ import numpy as np
 import seaborn as sns
 from scipy import stats
 from scipy.spatial import ConvexHull
-from scipy.ndimage.filters import gaussian_filter
+from matplotlib.colors import LinearSegmentedColormap
+# from scipy.ndimage.filters import gaussian_filter
 import warnings
 warnings.filterwarnings("ignore")
 
-from auxiliary import country_colors, annotation_fix_dict
+from auxiliary import country_colors, annotation_fix_dict, lighten_hex_color, get_players_xT
 
 
 
@@ -70,7 +71,7 @@ def voronoi(match_id, home_team, away_team, ax):
                         df['y'][i] = 80-df['y'][i]
 
 
-        ax.patch.set_facecolor('#0e1117')
+        
         pitch = Pitch(pitch_type='statsbomb', pitch_color='#0e1117', line_color='#c7d5cc')
         pitch.draw(ax=ax)
 
@@ -111,7 +112,7 @@ def pressure_heatmap(match_id, team, ax, inverse=False):
                 press_y = [80 - y for y in press_y]
         press_df = pd.DataFrame({'x': press_x, 'y': press_y})
 
-        ax.patch.set_facecolor('#0e1117')
+        
         pitch = Pitch(pitch_type='statsbomb', pitch_color='#0e1117', line_color='white', line_zorder=2)
         pitch.draw(ax=ax)
 
@@ -172,7 +173,7 @@ def passing_network(match_id, team, ax, inverse=False):
         # setting a threshold for minimum 2 passes between players to be noted on the chart
         passes_between = passes_between.loc[(passes_between['pass_count']>1)]
 
-        ax.patch.set_facecolor('#0e1117')
+        
         pitch = Pitch(pitch_type='statsbomb', pitch_color='#0e1117', line_color='#c7d5cc')
         pitch.draw(ax=ax)
 
@@ -233,7 +234,7 @@ def progressive_passes(match_id, team, ax, inverse=False):
         df['progressive'] = df['end'] < 0.75*df['beginning']
 
 
-        ax.patch.set_facecolor('#0e1117')
+        
         pitch = Pitch(pitch_type='statsbomb', pitch_color='#0e1117', line_color='#c7d5cc')
         pitch.draw(ax=ax)
 
@@ -256,7 +257,7 @@ def team_convex_hull(match_id, team, ax, inverse=False):
                 events['x'] = 120 - events['x']
                 events['y'] = 80 - events['y']
 
-        ax.patch.set_facecolor('#0e1117')
+        
         pitch = Pitch(pitch_type='statsbomb', pitch_color='#0e1117', line_color='#c7d5cc')
         pitch.draw(ax=ax)
 
@@ -302,7 +303,7 @@ def shot_types(match_id, home_team, away_team, ax):
         "Saved to Post":"p"
         }
 
-        ax.patch.set_facecolor('#0e1117')
+        
         pitch = VerticalPitch(pitch_type='statsbomb', pitch_color='#0e1117', line_color='#c7d5cc')
         pitch.draw(ax=ax)
 
@@ -383,7 +384,7 @@ def passing_sonars(match_id, team, ax, inverse=False):
         pass_sonar = pass_sonar[pass_sonar['player'].isin(startingXI)]
         pass_sonar
 
-        ax.patch.set_facecolor('#0e1117')
+        
         pitch = Pitch(pitch_type='statsbomb', pitch_color='#0e1117', line_color='#c7d5cc')
         pitch.draw(ax=ax)
 
@@ -476,7 +477,7 @@ def xG_flow(match_id, home_team, away_team, ax):
             else:
                 h_goals.append((row['minute'], h_xG[h_min.index(row['minute'])], row['player'].split(" ")[-1]))
 
-        ax.patch.set_facecolor('#0e1117')
+        
         ax.axis('on')
 
         ax.step(x=a_min, y=a_xG, color=country_colors[away_team], where='post', linewidth=4)
@@ -513,6 +514,106 @@ def xG_flow(match_id, home_team, away_team, ax):
         ax.set_title(f'xG Flow', fontname='Monospace', color='white', fontsize=20, fontweight='bold', pad=10)
 
 
+def shot_xg(match_id, team, ax, inverse=False):
+    events = sb.events(match_id=match_id)
+    shots = events.query(f' type == "Shot" and team == "{team}"')
+    shots['x'], shots['y'] = zip(*shots['location'])
+
+    pitch = VerticalPitch(pitch_type='statsbomb', pitch_color='#0e1117', line_color='#c7d5cc', half=True)
+    pitch.draw(ax=ax)
+
+    color = country_colors[team]
+    for _, row in shots.iterrows():
+        marker = '*' if row['shot_outcome'] == 'Goal' else 'o'
+        ax.scatter(row["y"], row["x"],
+                color=color,
+                edgecolors='white',
+                marker=marker,
+                s=row['shot_statsbomb_xg']*650
+        )
+
+    legend_elements=[Line2D([], [], marker='o', linestyle='None', markersize=3, label='xG = 0.2', markerfacecolor='white', markeredgecolor='black'),
+                    Line2D([], [], marker='o', linestyle='None', markersize=6, label='xG = 0.4', markerfacecolor='white', markeredgecolor='black'),
+                    Line2D([], [], marker='o', linestyle='None', markersize=9, label='xG = 0.6', markerfacecolor='white', markeredgecolor='black'),
+                    Line2D([], [], marker='o', linestyle='None', markersize=12, label='xG = 0.8', markerfacecolor='white', markeredgecolor='black'),
+                    Line2D([], [], marker='o', linestyle='None', markersize=15, label='xG = 1', markerfacecolor='white', markeredgecolor='black')]
+    ax.legend(handles=legend_elements, loc='lower center')
+
+    ax.set_title(f'{team} Shots by xG', color='white', fontsize=20, fontweight='bold', fontfamily='Monospace', pad=-5)
+
+
+def pass_heatmap(match_id, team, ax, inverse=False):
+    passes = sb.events(match_id=match_id, split=True, flatten_attrs=False)["passes"]
+    passes = passes.query(f'team == "{team}"')
+
+    
+    pitch = Pitch(pitch_type='statsbomb', pitch_color='#0e1117', line_color='#c7d5cc')
+    pitch.draw(ax=ax)
+
+    passes['x'], passes['y'] = zip(*passes['location'])
+    if inverse:
+        passes['x'] = 120 - passes['x']
+        passes['y'] = 80 - passes['y']
+
+    sns.kdeplot(
+            x=passes["x"],
+            y=passes["y"],
+            fill = True,
+            shade_lowest=False,
+            alpha=.6,
+            n_levels=10,
+            cmap = LinearSegmentedColormap.from_list('', [lighten_hex_color(country_colors[team], 0.45), country_colors[team]], N=100),
+            ax=ax
+        )
+    ax.set_xlim(0,120)
+    ax.set_ylim(80,0)
+
+    ax.set_title(f'{team} Passes Heatmap', color='white', size=20, fontweight='bold')
+
+
+def xT_scatterplot(match_id, home_team, away_team, ax):
+    xtdf = get_players_xT(match_id)
+
+    top_xT = xtdf.sort_values('total_xT', ascending=False).head(5)['player'].values
+    top_pass_xT = xtdf.sort_values('pass_xT', ascending=False).head(5)['player'].values
+    top_carry_xT = xtdf.sort_values('carry_xT', ascending=False).head(5)['player'].values
+
+    ax.axis('on')
+    for _, row in xtdf.iterrows():
+        ax.scatter(
+            x=row['pass_xT'],
+            y=row['carry_xT'],
+            s=100,
+            color=country_colors[row['team']],
+            edgecolor='white',
+            linewidth=1
+        )
+
+        if row['player'] in top_pass_xT or row['player'] in top_carry_xT or row['player'] in top_xT:
+            ax.text(
+                row['pass_xT'],
+                row['carry_xT']+0.08*max(xtdf['carry_xT']),
+                row['player'],
+                fontname='Monospace',
+                color='white',
+                ha='center',
+                va='center',
+                fontweight='bold'
+            )
+        
+    ax.set_xlabel('Pass xT', fontname='Monospace',color='white',fontsize=16)
+    ax.set_ylabel('Carry xT', fontname='Monospace',color='white',fontsize=16)
+
+    for x in ['top','bottom','left','right']:
+            if x in ['top', 'right']:
+                    ax.spines[x].set_visible(False)
+            else:
+                    ax.spines[x].set_color('white')
+
+    ax.set_title('Players xT', fontname='Monospace',color='white',fontsize=20, fontweight='bold')
+
+       
+
 viz_dict = {
         "Overview": overview,
         "Voronoi Diagram": voronoi,
@@ -522,5 +623,8 @@ viz_dict = {
         'Action Territories': team_convex_hull,
         "Shot Types": shot_types,
         "Passing Sonars": passing_sonars,
-        "xG Flow": xG_flow
+        "xG Flow": xG_flow,
+        "Shot xG": shot_xg,
+        'Pass Heatmap': pass_heatmap,
+        'xT by Players': xT_scatterplot
 }

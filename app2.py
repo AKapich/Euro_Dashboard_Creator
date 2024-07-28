@@ -38,9 +38,10 @@ competition_stage = matches[matches['match_id']==match_id].iloc[0]['competition_
 #                                     "Voronoi Diagram", "Team Expected Threat", "Pressure Heatmap"]
 #                                     )
 
-side_charts = ["None", "Passing Network", "Passing Sonars", "Team Pass Map", 'Progressive Passes', "Shot Map", "Team Expected Threat",
-               "Action Territories", "Pressure Heatmap"]
-middle_charts = ["None", "Overview", 'xG Flow', "Voronoi Diagram", "Shot Types"]
+side_charts = ["None", "Passing Network", "Passing Sonars",  "Pressure Heatmap", "Shot xG", "Action Territories", 'Progressive Passes',
+               "Pass Heatmap", "Team Expected Threat"]
+
+middle_charts = ["None", "Overview", 'xG Flow', "Voronoi Diagram", "Shot Types", 'xT by Players']
 
 
 match_data = matches.query('match_id == @match_id').iloc[0]

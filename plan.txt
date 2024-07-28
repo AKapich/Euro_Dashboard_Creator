@@ -4,9 +4,9 @@ middle column plots:
 * voronoi DONE
 * big shotmap DONE
 * xG Flow DONE
+* xT scatterplot DONE
 
 * momentum (to create) !!!
-* some scatterplot (to create) !!!
 
 
 
@@ -14,13 +14,12 @@ side column plots:
 * passing Network DONE
 * progressive passes DONE
 * pressure  DONE
-* passing sonars DONE (to finish inverse)
+* passing sonars DONE
 * convex hull DONE
+* shot Map DONE
+* team pass map DONE
 
-* shot Map
 * team expected threat
-* team pass map
-
 * ON GOAL SHOT MAP (to create) !!!
 * OTHER HEATMAPS (to create) !!!
 * PASSES TO final3rd (to create) !!!
