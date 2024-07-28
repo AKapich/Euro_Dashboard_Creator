@@ -1,8 +1,8 @@
 from statsbombpy import sb
 
 from mplsoccer.pitch import Pitch, VerticalPitch
-import matplotlib as mpl
-import matplotlib.pyplot as plt
+# import matplotlib as mpl
+# import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.lines import Line2D
 import pandas as pd
@@ -11,7 +11,7 @@ import seaborn as sns
 from scipy import stats
 from scipy.spatial import ConvexHull
 from matplotlib.colors import LinearSegmentedColormap
-# from scipy.ndimage.filters import gaussian_filter
+
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -211,29 +211,24 @@ def passing_network(match_id, team, ax, inverse=False):
 def progressive_passes(match_id, team, ax, inverse=False):
         passes = sb.events(match_id=match_id, split=True, flatten_attrs=False)["passes"]
         df = passes[passes.team==team]
-        df.index = range(len(df))
         
-
         df[['start_x', 'start_y']] = pd.DataFrame(df['location'].tolist(), index=df.index)
-        df["end_x"] = [df["pass"][i]['end_location'][0] for i in range(len(df))]
-        df["end_y"] = [df["pass"][i]['end_location'][1] for i in range(len(df))]
+        df["end_x"] = [df["pass"][i]['end_location'][0] for i in df.index]
+        df["end_y"] = [df["pass"][i]['end_location'][1] for i in df.index]
 
-        if inverse:
-                df['start_x'] = 120 - df['start_x']
-                df['start_y'] = 80 - df['start_y']
-                df['end_x'] = 120 - df['end_x']
-                df['end_y'] = 80 - df['end_y']
         if not inverse:       
             df['beginning'] = np.sqrt(np.square(120-df['start_x'])+np.square(80-df['start_y']))
             df['end'] = np.sqrt(np.square(120-df['end_x'])+np.square(80-df['end_y']))
         else:
+            df['start_x'] = 120 - df['start_x']
+            df['start_y'] = 80 - df['start_y']
+            df['end_x'] = 120 - df['end_x']
+            df['end_y'] = 80 - df['end_y']
             df['beginning'] = np.sqrt(np.square(df['start_x'])+np.square(df['start_y']))
             df['end'] = np.sqrt(np.square(df['end_x'])+np.square(df['end_y']))
 
         # according to definiton pass is progressive if it brings the ball closer to the goal by at least 25%
         df['progressive'] = df['end'] < 0.75*df['beginning']
-
-
         
         pitch = Pitch(pitch_type='statsbomb', pitch_color='#0e1117', line_color='#c7d5cc')
         pitch.draw(ax=ax)
@@ -244,7 +239,61 @@ def progressive_passes(match_id, team, ax, inverse=False):
                 ax=ax, comet=True, color=country_colors[team])
         
         ax.set_title(f'{team} Progressive Passes', color='white', fontsize=20, fontweight='bold', fontfamily='Monospace', pad=-5)
+
+
+def final_3rd_passes(match_id, team, ax, inverse=False):
+        passes = sb.events(match_id=match_id, split=True, flatten_attrs=False)["passes"]
+        df = passes[passes.team==team]
         
+        df[['start_x', 'start_y']] = pd.DataFrame(df['location'].tolist(), index=df.index)
+        df["end_x"] = [df["pass"][i]['end_location'][0] for i in df.index]
+        df["end_y"] = [df["pass"][i]['end_location'][1] for i in df.index]
+
+        if inverse:
+            df['start_x'] = 120 - df['start_x']
+            df['start_y'] = 80 - df['start_y']
+            df['end_x'] = 120 - df['end_x']
+            df['end_y'] = 80 - df['end_y']
+
+        df['to_final_3rd'] = df['end_x'] > 80 if not inverse else df['end_x'] < 40
+        
+        pitch = Pitch(pitch_type='statsbomb', pitch_color='#0e1117', line_color='#c7d5cc')
+        pitch.draw(ax=ax)
+
+        df = df[df['to_final_3rd']==True]
+        df.index = range(len(df))
+        pitch.lines(xstart=df["start_x"], ystart=df["start_y"], xend=df["end_x"], yend=df["end_y"],
+                ax=ax, comet=True, color=country_colors[team])
+        
+        ax.set_title(f'{team} Passes to Final 3rd', color='white', fontsize=20, fontweight='bold', fontfamily='Monospace', pad=-5)
+
+
+def penalty_passes(match_id, team, ax, inverse=False):
+        passes = sb.events(match_id=match_id, split=True, flatten_attrs=False)["passes"]
+        df = passes[passes.team==team]
+        
+        df[['start_x', 'start_y']] = pd.DataFrame(df['location'].tolist(), index=df.index)
+        df["end_x"] = [df["pass"][i]['end_location'][0] for i in df.index]
+        df["end_y"] = [df["pass"][i]['end_location'][1] for i in df.index]
+
+        if inverse:
+            df['start_x'] = 120 - df['start_x']
+            df['start_y'] = 80 - df['start_y']
+            df['end_x'] = 120 - df['end_x']
+            df['end_y'] = 80 - df['end_y']
+
+        df['to_penalty'] = (df['end_x'].between(102, 120) & df['end_y'].between(18, 62)) if not inverse else (df['end_x'].between(0, 18) & df['end_y'].between(18, 62))
+        
+        pitch = Pitch(pitch_type='statsbomb', pitch_color='#0e1117', line_color='#c7d5cc')
+        pitch.draw(ax=ax)
+
+        df = df[df['to_penalty']==True]
+        df.index = range(len(df))
+        pitch.lines(xstart=df["start_x"], ystart=df["start_y"], xend=df["end_x"], yend=df["end_y"],
+                ax=ax, comet=True, color=country_colors[team])
+        
+        ax.set_title(f'{team} Passes to Penalty Area', color='white', fontsize=20, fontweight='bold', fontfamily='Monospace', pad=-5)
+
 
 def team_convex_hull(match_id, team, ax, inverse=False):
         events = sb.events(match_id=match_id)
@@ -674,5 +723,7 @@ viz_dict = {
         "Shot xG": shot_xg,
         'Pass Heatmap': pass_heatmap,
         'xT by Players': xT_scatterplot,
-        'xT Heatmap': xT_heatmap
+        'xT Heatmap': xT_heatmap,
+        'Passes to Final 3rd': final_3rd_passes,
+        'Passes to Penalty Area': penalty_passes
 }

@@ -1,6 +1,6 @@
 import streamlit as st
 from streamlit_extras.badges import badge
-from auxiliary import match_dict, matches
+from auxiliary import match_dict, matches, country_colors
 from get_viz import viz_dict
 
 import pandas as pd
@@ -31,7 +31,7 @@ competition_stage = matches[matches['match_id']==match_id].iloc[0]['competition_
 
 
 side_charts = ["None", "Passing Network", "Passing Sonars",  "Pressure Heatmap", "Shot xG", "Action Territories", 'Progressive Passes',
-               "Pass Heatmap", "xT Heatmap"]
+               "Pass Heatmap", "xT Heatmap", "Passes to Final 3rd", "Passes to Penalty Area"]
 
 middle_charts = ["None", "Overview", 'xG Flow', "Voronoi Diagram", "Shot Types", 'xT by Players']
 
@@ -72,13 +72,13 @@ for i in range(len(axes)):
         axes[i][j].axis('off')
 
 
-axes[0][0].imshow(Image.open(f'./{home_team}.png'))
-axes[0][2].imshow(Image.open(f'./{away_team}.png'))
+axes[0][0].imshow(Image.open(f'./federations/{home_team}.png'))
+axes[0][2].imshow(Image.open(f'./federations/{away_team}.png'))
 
 home_team_text = axes[0][1].text(0.2, 0.4, home_team, fontsize=30, ha='center', fontfamily="Monospace", fontweight='bold', color='white')
-home_team_text.set_bbox(dict(facecolor='#002654', alpha=0.5, edgecolor='#085299', boxstyle='round'))
+home_team_text.set_bbox(dict(facecolor=country_colors[home_team], alpha=0.5, edgecolor='white', boxstyle='round'))
 away_team_text = axes[0][1].text(0.8, 0.4, away_team, fontsize=30, ha='center', fontfamily="Monospace", fontweight='bold', color='white')
-away_team_text.set_bbox(dict(facecolor='#ef4e2f', alpha=0.5, edgecolor='#be492a', boxstyle='round'))
+away_team_text.set_bbox(dict(facecolor=country_colors[away_team], alpha=0.5, edgecolor='white', boxstyle='round'))
 score_text = axes[0][1].text(
     0.5,
     0,

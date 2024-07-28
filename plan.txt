@@ -19,8 +19,8 @@ side column plots:
 * shot Map DONE
 * team pass map DONE
 * team expected threat hetamap DONE
+* Passes TO final3rd DONE
 
 * ON GOAL SHOT MAP (to create) !!!
 * OTHER HEATMAPS (to create) !!!
-* PASSES TO final3rd (to create) !!!
 * high turnover statsbomb style (to create) !!!
