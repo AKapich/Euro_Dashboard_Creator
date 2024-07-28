@@ -1,7 +1,7 @@
 from statsbombpy import sb
 
 from mplsoccer.pitch import Pitch, VerticalPitch
-# import matplotlib as mpl
+import matplotlib as mpl
 # import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.lines import Line2D
@@ -85,15 +85,10 @@ def voronoi(match_id, home_team, away_team, ax):
         for i in range(len(df['x'])):
                 pitch.scatter(df['x'][i],df['y'][i],ax=ax,color=country_colors[df['team'][i]])
                         
-                if df['player'][i].split(" ")[-1] not in annotation_fix_dict.keys():
-                        if df['team'][i] not in ['Spain']:
-                                annotation_text = df['player'][i].split(" ")[-1]
-                        else:
-                                annotation_text = df['player'][i].split(" ")[-2]
-                                if annotation_text in annotation_fix_dict.keys():
-                                        annotation_text = annotation_fix_dict[annotation_text]
+                if df['player'][i] not in annotation_fix_dict.keys():
+                    annotation_text = df['player'][i].split(" ")[-1]
                 else:
-                        annotation_text = annotation_fix_dict[df['player'][i].split(" ")[-1]]
+                    annotation_text = annotation_fix_dict[df['player'][i]].split(" ")[-1]
                         
                 pitch.annotate(annotation_text, xy=(df['x'][i], df['y'][i]+2),
                                 c='black', va='center', ha='center',
@@ -521,13 +516,19 @@ def xG_flow(match_id, home_team, away_team, ax):
         goals = shots[shots['outcome']=='Goal']
         a_goals, h_goals = [], []
         for _, row in goals.iterrows():
-            if row['team'] == away_team:
-                a_goals.append((row['minute'], a_xG[a_min.index(row['minute'])], row['player'].split(" ")[-1]))
+            if row['player'] not in annotation_fix_dict.keys():
+                annotation_text = row['player'].split(" ")[-1]
             else:
-                h_goals.append((row['minute'], h_xG[h_min.index(row['minute'])], row['player'].split(" ")[-1]))
+                annotation_text = annotation_fix_dict[row['player']].split(" ")[-1]
+            if row['team'] == away_team:
+                a_goals.append((row['minute'], a_xG[a_min.index(row['minute'])], annotation_text))
+            else:
+                h_goals.append((row['minute'], h_xG[h_min.index(row['minute'])], annotation_text))
 
-        
         ax.axis('on')
+        ax.tick_params(axis='x', colors='white')
+        ax.tick_params(axis='y', colors='white')
+    
 
         ax.step(x=a_min, y=a_xG, color=country_colors[away_team], where='post', linewidth=4)
         ax.step(x=h_min, y=h_xG, color=country_colors[home_team], where='post', linewidth=4)
@@ -540,10 +541,23 @@ def xG_flow(match_id, home_team, away_team, ax):
         ax.scatter([i[0] for i in h_goals], [i[1] for i in h_goals],
                    color=country_colors[home_team], zorder=10, s=250, marker='h', edgecolor='white')
         for goal in a_goals:
-            ax.annotate(goal[2], (goal[0], goal[1]), textcoords="offset points", xytext=(0,10), ha='center', color='white', fontsize=10, fontname='Monospace')
-
+            ax.annotate(goal[2], (goal[0], goal[1]), textcoords="offset points",
+                        xytext=(0,10), ha='center', color='white', fontsize=10, fontname='Monospace')
         for goal in h_goals:
-            ax.annotate(goal[2], (goal[0], goal[1]), textcoords="offset points", xytext=(0,10), ha='center', color='white', fontsize=10, fontname='Monospace')
+            ax.annotate(goal[2], (goal[0], goal[1]), textcoords="offset points",
+                        xytext=(0,10), ha='center', color='white', fontsize=10, fontname='Monospace')
+        
+        # Handling Own Goals
+        events = sb.events(match_id=match_id)
+        for _, row in events.query('type == "Own Goal Against"').iterrows():
+            color = country_colors[home_team] if row['team'] == away_team else country_colors[away_team]
+            for_team = home_team if row['team'] == away_team else away_team
+            y = row['minute']
+            x = shots[shots['minute'] < row['minute']][shots['team']==for_team]['xG'].sum()
+            ax.scatter(y, x, color=color, zorder=10, s=250, marker='h', edgecolor='white')
+            ax.annotate(f'Own Goal', (y, x), textcoords="offset points",
+                        xytext=(0,10), ha='center', color='white', fontsize=10, fontname='Monospace')
+              
 
         ax.grid(ls='dotted',lw=.5,color='lightgrey',axis='y',zorder=1)
 
@@ -639,10 +653,15 @@ def xT_scatterplot(match_id, home_team, away_team, ax):
         )
 
         if row['player'] in top_pass_xT or row['player'] in top_carry_xT or row['player'] in top_xT:
+            if row['player'] not in annotation_fix_dict.keys():
+                annotation_text = row['player'].split(" ")[-1]
+            else:
+                annotation_text = annotation_fix_dict[row['player']].split(" ")[-1] 
+
             ax.text(
                 row['pass_xT'],
                 row['carry_xT']+0.08*max(xtdf['carry_xT']),
-                row['player'],
+                annotation_text,
                 fontname='Monospace',
                 color='white',
                 ha='center',

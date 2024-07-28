@@ -10,28 +10,28 @@ match_dict = {home+' - '+away: match_id
 
 country_colors = {
     "Poland": "#de1a41",
-    "Denmark": "#C60C30",
+    "Denmark": "#cf1f25",
     "Portugal": "#006400",
-    "Germany": "#000000",
+    "Germany": "#b864c1",
     "France": "#0055A4",
     "Netherlands": "#E77E02",
     "Belgium": "#FFD700",
-    "Spain": "#C60C30",
-    "Croatia": "#FF0000",
+    "Spain": "#fd112a",
+    "Croatia": "#0766af",
     "England": "#002366",
-    "Serbia": "#DC143C",
+    "Serbia": "#711e28",
     "Switzerland": "#FF0000",
     "Scotland": '#006cb7',
     'Hungary': '#008d55',
-    'Albania': '#ed1b24',
+    'Albania': '#711e28',
     'Italy': '#009247',
     'Slovenia': '#005aab',
-    'Austria': '#ed1b24',
-    'Slovakia': '#005aab',
-    'Romania': '#ffde00',
-    'Ukraine': '#005aab',
+    'Austria': '#711e28',
+    'Slovakia': '#ef232c',
+    'Romania': '#034ea2',
+    'Ukraine': '#08ade8',
     'Turkey': '#ed1b24',
-    'Georgia': '#fffffc',
+    'Georgia': '#711e28',
     'Czech Republic': '#005aab'
 }
 
@@ -56,6 +56,14 @@ def lighten_hex_color(hex_color, percentage):
     r, g, b = min(255, int(r)), min(255, int(g)), min(255, int(b))
     
     return "#{:02x}{:02x}{:02x}".format(r, g, b)
+
+
+# def darken_hex_color(hex_color, percentage):
+#     hex_color = hex_color.lstrip('#')
+#     r, g, b = int(hex_color[0:2], 16), int(hex_color[2:4], 16), int(hex_color[4:6], 16)
+#     r, g, b = int(r * (1 - percentage)), int(g * (1 - percentage)), int(b * (1 - percentage))
+    
+#     return "#{:02x}{:02x}{:02x}".format(r, g, b)
 
 
 def get_players_xT(match_id):
@@ -94,12 +102,68 @@ def get_players_xT(match_id):
 
 
 annotation_fix_dict = {
-    'Lottin': 'Mbappé',
-    'Aveiro': 'Ronaldo',
-    'Teixeira': 'Dalot',
-    'Sequeira': 'Félix',
-    'Arthuer': 'Williams',
-    'Mendibil': 'Simón',
-    'Carvajal': 'Olmo',
-    'Cascante': 'Rodri',
+    'Mikel Merino Zazón': 'Mikel Merino',
+    'Ayoze Pérez Gutiérrez': 'Ayoze Pérez',
+    'José Luis Sanmartín Mato': 'Joselu',
+    'Álvaro Borja Morata Martín': 'Álvaro Morata',
+    'David Raya Martin': 'David Raya',
+    'Aymeric Laporte': 'Aymeric Laporte',
+    'José Ignacio Fernández Iglesias': 'Nacho Fernández',
+    'Daniel Carvajal Ramos': 'Dani Carvajal',
+    'Fabián Ruiz Peña': 'Fabián Ruiz',
+    'Mikel Oyarzabal Ugarte': 'Mikel Oyarzabal',
+    'Ferrán Torres García': 'Ferrán Torres',
+    'Rodrigo Hernández Cascante': 'Rodri',
+    'Jesús Navas González': 'Jesús Navas',
+    'Alejandro Grimaldo García': 'Alejandro Grimaldo',
+    'Unai Simón Mendibil': 'Unai Simón',
+    'Daniel Olmo Carvajal': 'Dani Olmo',
+    'Marc Cucurella Saseta': 'Marc Cucurella',
+    'Robin Aime Robert Le Normand': 'Robin Le Normand',
+    'Martín Zubimendi Ibáñez': 'Martín Zubimendi',
+    'Pedro González López': 'Pedri',
+    'Alejandro Remiro Gargallo': 'Álex Remiro',
+    'Alejandro Baena Rodríguez': 'Álex Baena',
+    'Daniel Vivian Moreno': 'Dani Vivian',
+    'Nicholas Williams Arthuer': 'Nico Williams',
+    'Fermin Lopez Marin': 'Fermin Lopez',
+    'Lamine Yamal Nasraoui Ebana': 'Lamine Yamal',
+
+    'Ricardo Iván Rodríguez Araya': 'Ricardo Rodríguez',
+
+    'Jorge Luiz Frello Filho': 'Jorginho',
+
+    'Vanja Milinković Savić': 'Vanja Milinković-Savić',
+
+    'Bernardo Mota Veiga de Carvalho e Silva': 'Bernardo Silva',
+    'Bruno Miguel Borges Fernandes': 'Bruno Fernandes',
+    'Rui Pedro dos Santos Patrício': 'Rui Patrício',
+    'Rúben Santos Gato Alves Dias': 'Rúben Dias',
+    'Cristiano Ronaldo dos Santos Aveiro': 'Cristiano Ronaldo',
+    'Nélson Cabral Semedo': 'Nélson Semedo',
+    'João Pedro Cavaco Cancelo': 'João Cancelo',
+    'Rúben Diogo Da Silva Neves': 'Rúben Neves',
+    'Diogo José Teixeira da Silva': 'Diogo Jota',
+    'João Félix Sequeira': 'João Félix',
+    'João Maria Lobo Alves Palhinha Gonçalves': 'João Palhinha',
+    'Danilo Luís Hélio Pereira': 'Danilo Pereira',
+    'José Diogo Dalot Teixeira': 'Diogo Dalot',
+    'Rafael Alexandre Conceição Leão': 'Rafael Leão',
+    'José Pedro Malheiro de Sá': 'José Sá',
+    'Kléper Laveran Lima Ferreira': 'Pepe',
+    'Pedro Lomba Neto': 'Pedro Neto',
+    'Diogo Meireles Costa': 'Diogo Costa',
+    'Vitor Machado Ferreira': 'Vitinha',
+    'Gonçalo Matias Ramos': 'Gonçalo Ramos',
+    'Francisco Fernandes Conceição': 'Francisco Conceição',
+    'Matheus Luiz Nunes': 'Matheus Nunes',
+    'Gonçalo Bernardo Inácio': 'Gonçalo Inácio',
+    'António João Pereira Albuquerque Tavares Silva': 'António Silva',
+
+    'Kylian Mbappé Lottin': 'Kylian Mbappé',
+    'Theo Bernard François Hernández': 'Theo Hernández',
+
+    'Vernon De Marco Morlacchi': 'Vernon De Marco',
+
+    'Romelu Lukaku Menama': 'Romelu Lukaku',
 }

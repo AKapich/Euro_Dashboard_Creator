@@ -9,7 +9,6 @@ middle column plots:
 * momentum (to create) !!!
 
 
-
 side column plots:
 * passing Network DONE
 * progressive passes DONE
@@ -24,3 +23,10 @@ side column plots:
 * ON GOAL SHOT MAP (to create) !!!
 * OTHER HEATMAPS (to create) !!!
 * high turnover statsbomb style (to create) !!!
+
+
+
+
+spain - germany passing network
+
+goals on xG flow - own goals (?)

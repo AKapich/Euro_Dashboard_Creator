@@ -17,7 +17,6 @@ st.set_page_config(
 
 st.title("Euro 2024 Analytical Tool")
 st.markdown("*Platform enabling users to create their own match dashboards*")
-# st.markdown("---")
 st.sidebar.image("https://raw.githubusercontent.com/AKapich/StatsBomb360_App/main/logos/EURO2024.png")
 
 # dropdown for choosing the match
@@ -30,10 +29,10 @@ away_team = selected_match.split(' - ')[1]
 competition_stage = matches[matches['match_id']==match_id].iloc[0]['competition_stage']
 
 
-side_charts = ["None", "Passing Network", "Passing Sonars",  "Pressure Heatmap", "Shot xG", "Action Territories", 'Progressive Passes',
-               "Pass Heatmap", "xT Heatmap", "Passes to Final 3rd", "Passes to Penalty Area"]
+side_charts = ["None", "Passing Network", "Passing Sonars", "Shot xG", "Pass Heatmap", "xT Heatmap", "Pressure Heatmap",  "Action Territories",
+               'Progressive Passes', "Passes to Final 3rd", "Passes to Penalty Area"]
 
-middle_charts = ["None", "Overview", 'xG Flow', "Voronoi Diagram", "Shot Types", 'xT by Players']
+middle_charts = ["None", "Overview", 'xG Flow', "Voronoi Diagram", 'xT by Players', "Shot Types"]
 
 match_data = matches.query('match_id == @match_id').iloc[0]
 ##################################################################
@@ -41,7 +40,8 @@ match_data = matches.query('match_id == @match_id').iloc[0]
 tab1, tab2 = st.tabs(["Creator Menu", "Dashboard Overview"])
 
 with tab1:
-    n_rows = st.slider('Number of Rows', 3, 6, 4)
+    n_rows = st.slider('Number of Rows', 2, 5, 3)
+    n_rows += 1
     cols = st.columns(3) 
     selected_options = [[None for _ in range(3)] for _ in range(n_rows)]
 
@@ -49,9 +49,9 @@ with tab1:
         for j in range(len(selected_options[i])):
             with cols[j]:
                 if j == 1:
-                    selected_options[i][j] = st.selectbox(f'Row {i + 1} & Column {j + 1}', middle_charts)
+                    selected_options[i][j] = st.selectbox(f'Row {i} & Column {j + 1}', middle_charts)
                 else:
-                    selected_options[i][j] = st.selectbox(f'Row {i + 1} & Column {j + 1}', side_charts)
+                    selected_options[i][j] = st.selectbox(f'Row {i} & Column {j + 1}', side_charts)
     st.markdown('---')
 
 with tab2: 
@@ -63,7 +63,7 @@ axes = [[None for _ in range(3)] for _ in range(n_rows)]
 
 fig = plt.figure(figsize=(25, fig_height), constrained_layout=True)
 fig.patch.set_facecolor('#0e1117')
-gs = fig.add_gridspec(nrows=n_rows,ncols=3, height_ratios=height_ratios, width_ratios=[1, 1, 1])
+gs = fig.add_gridspec(nrows=n_rows, ncols=3, height_ratios=height_ratios, width_ratios=[1, 1, 1])
 
 for i in range(len(axes)):
     for j in range(len(axes[i])):
