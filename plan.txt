@@ -18,8 +18,8 @@ side column plots:
 * convex hull DONE
 * shot Map DONE
 * team pass map DONE
+* team expected threat hetamap DONE
 
-* team expected threat
 * ON GOAL SHOT MAP (to create) !!!
 * OTHER HEATMAPS (to create) !!!
 * PASSES TO final3rd (to create) !!!

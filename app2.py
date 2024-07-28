@@ -1,16 +1,16 @@
 import streamlit as st
 from streamlit_extras.badges import badge
 from auxiliary import match_dict, matches
-from change_charts import create_plot
+from get_viz import viz_dict
 
 import pandas as pd
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 from PIL import Image
 
+
 st.set_page_config(
         page_title="Create Your Own Euro 2024 Match Dashboard!",
-        #page_icon="⚽",
         page_icon='https://raw.githubusercontent.com/AKapich/StatsBomb360_App/main/logos/eurologo.ico',
     )
 
@@ -18,8 +18,6 @@ st.set_page_config(
 st.title("Euro 2024 Analytical Tool")
 st.markdown("*Platform enabling users to create their own match dashboards*")
 # st.markdown("---")
-
-# World Cup Image
 st.sidebar.image("https://raw.githubusercontent.com/AKapich/StatsBomb360_App/main/logos/EURO2024.png")
 
 # dropdown for choosing the match
@@ -31,24 +29,13 @@ home_team = selected_match.split(' - ')[0]
 away_team = selected_match.split(' - ')[1]
 competition_stage = matches[matches['match_id']==match_id].iloc[0]['competition_stage']
 
-# choose chart type
-# selected_chart = st.sidebar.radio("Select Chart Type",
-#                                    ["Overview", "Passing Network", "Passing Sonars", "Individual Pass Map", "Team Pass Map",
-#                                     'Progressive Passes', 'xG Flow', "Shot Types", 'Individual Convex Hull', "Action Territories",
-#                                     "Voronoi Diagram", "Team Expected Threat", "Pressure Heatmap"]
-#                                     )
 
 side_charts = ["None", "Passing Network", "Passing Sonars",  "Pressure Heatmap", "Shot xG", "Action Territories", 'Progressive Passes',
-               "Pass Heatmap", "Team Expected Threat"]
+               "Pass Heatmap", "xT Heatmap"]
 
 middle_charts = ["None", "Overview", 'xG Flow', "Voronoi Diagram", "Shot Types", 'xT by Players']
 
-
 match_data = matches.query('match_id == @match_id').iloc[0]
-# st.write(f"### {home_team} {match_data['home_score']}:{match_data['away_score']} {away_team}")
-# st.markdown('---')
-
-# create_plot(selected_chart, match_id, home_team, away_team, competition_stage)
 ##################################################################
 
 tab1, tab2 = st.tabs(["Creator Menu", "Dashboard Overview"])
@@ -104,12 +91,9 @@ score_text = axes[0][1].text(
 )
 
 
-from get_viz import viz_dict
-
 for i in range(1, len(axes)):
     for j in range(len(axes[i])):
         if selected_options[i][j] != 'None':
-            # axes[i][j].text(60, -2, selected_options[i][j], fontsize=20, ha='center', fontfamily="Monospace", fontweight='bold', color='white')
             if j == 1:
                 viz_dict[selected_options[i][j]](match_id, home_team, away_team, axes[i][j])
                 if selected_options[i][j] == 'xG Flow':
@@ -119,8 +103,6 @@ for i in range(1, len(axes)):
                 viz_dict[selected_options[i][j]](match_id, home_team, axes[i][j])
             elif j == 2:
                 viz_dict[selected_options[i][j]](match_id, away_team, axes[i][j], inverse=True)
-
-
 
 st.pyplot(fig)
 

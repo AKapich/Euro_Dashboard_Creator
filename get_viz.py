@@ -613,6 +613,53 @@ def xT_scatterplot(match_id, home_team, away_team, ax):
     ax.set_title('Players xT', fontname='Monospace',color='white',fontsize=20, fontweight='bold')
 
        
+def xT_heatmap(match_id, team, ax, inverse=False):
+    xT = pd.read_csv("https://raw.githubusercontent.com/AKapich/WorldCup_App/main/app/xT_Grid.csv", header=None)
+    xT = np.array(xT)
+    xT_rows, xT_cols = xT.shape 
+    events = sb.events(match_id=match_id)
+    events = events[events['team']==team]
+
+    def get_xT(type):
+        df = events[events['type']==type]
+        df['start_x'], df['start_y'] = zip(*df['location'])
+        df['end_x'], df['end_y'] = zip(*df[f'{type.lower()}_end_location'])
+
+        df[f'start_x_bin'] = pd.cut(df['start_x'], bins=xT_cols, labels=False)
+        df[f'start_y_bin'] = pd.cut(df['start_y'], bins=xT_rows, labels=False)
+        df[f'end_x_bin'] = pd.cut(df['end_x'], bins=xT_cols, labels=False)
+        df[f'end_y_bin'] = pd.cut(df['end_x'], bins=xT_rows, labels=False)
+        df['start_zone_value'] = df[[f'start_x_bin', f'start_y_bin']].apply(lambda z: xT[z[1]][z[0]], axis=1)
+        df['end_zone_value'] = df[[f'end_x_bin', f'end_y_bin']].apply(lambda z: xT[z[1]][z[0]], axis=1)
+        df['xT'] = df['start_zone_value']-df['end_zone_value']
+
+        return df[['xT', 'start_x', 'start_y', 'end_x', 'end_y', 'type']]
+
+    xtdf = pd.concat([get_xT('Pass'), get_xT('Carry')], axis=0)
+    
+    if inverse:
+        xtdf['start_x'] = 120 - xtdf['start_x']
+        xtdf['end_x'] = 120 - xtdf['end_x']
+        xtdf['start_y'] = 80 - xtdf['start_y']
+        xtdf['end_y'] = 80 - xtdf['end_y']
+
+
+    pitch = Pitch(pitch_type='statsbomb', pitch_color='#0e1117', line_color='white', line_zorder=2)
+    pitch.draw(ax=ax)
+
+    bin_statistic = pitch.bin_statistic(xtdf.start_x, xtdf.start_y, values=xtdf.xT, statistic='sum', bins=(16, 12), normalize=False)
+    pitch.heatmap(bin_statistic, edgecolor='None', ax=ax, alpha=0.65,
+            cmap=LinearSegmentedColormap.from_list('', [lighten_hex_color(country_colors[team], 0.8), country_colors[team]], N=20))
+
+    if not inverse:
+        pitch.annotate(text='The direction of play  ', xytext=(45, 84), xy=(85, 84), ha='center', va='center', ax=ax,
+                    arrowprops=dict(facecolor='white'), fontsize=12, color='white', fontweight="bold", family="monospace")
+    else:
+        pitch.annotate(text='  The direction of play', xytext=(75, 84), xy=(35, 84), ha='center', va='center', ax=ax,
+                    arrowprops=dict(facecolor='white'), fontsize=12, color='white', fontweight="bold", family="monospace")
+        
+    ax.set_title(f'{team} xT Pass+Carry (Start Zones)', color='white', fontsize=20, fontweight='bold', fontfamily='Monospace', pad=-5)
+
 
 viz_dict = {
         "Overview": overview,
@@ -626,5 +673,6 @@ viz_dict = {
         "xG Flow": xG_flow,
         "Shot xG": shot_xg,
         'Pass Heatmap': pass_heatmap,
-        'xT by Players': xT_scatterplot
+        'xT by Players': xT_scatterplot,
+        'xT Heatmap': xT_heatmap
 }
