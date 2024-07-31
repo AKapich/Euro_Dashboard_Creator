@@ -21,7 +21,7 @@ st.sidebar.image("https://raw.githubusercontent.com/AKapich/StatsBomb360_App/mai
 
 # dropdown for choosing the match
 st.sidebar.title("Select Match")
-selected_match = st.sidebar.selectbox("Match:", match_dict.keys(), index=35)
+selected_match = st.sidebar.selectbox("Match:", match_dict.keys(), index=1)
 
 match_id = match_dict[selected_match]
 home_team = selected_match.split(' - ')[0]

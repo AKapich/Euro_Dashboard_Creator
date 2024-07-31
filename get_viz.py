@@ -1,16 +1,14 @@
 from statsbombpy import sb
 
 from mplsoccer.pitch import Pitch, VerticalPitch
-import matplotlib as mpl
-# import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.lines import Line2D
+from matplotlib.colors import LinearSegmentedColormap
 import pandas as pd
 import numpy as np
 import seaborn as sns
 from scipy import stats
 from scipy.spatial import ConvexHull
-from matplotlib.colors import LinearSegmentedColormap
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -185,16 +183,10 @@ def passing_network(match_id, team, ax, inverse=False):
                         ax=ax)
 
         for index, row in average_location.iterrows():
-                if row.name.split(" ")[-1] not in annotation_fix_dict.keys():
-                        if team not in ['Spain']:
-                                annotation_text = row.name.split(" ")[-1] 
-                        else:
-                                annotation_text = row.name.split(" ")[-2] 
-                                if annotation_text in annotation_fix_dict.keys():
-                                        annotation_text = annotation_fix_dict[annotation_text]
+                if row.name not in annotation_fix_dict.keys():
+                    annotation_text = row.name.split(" ")[-1]
                 else:
-                        annotation_text = annotation_fix_dict[row.name.split(" ")[-1]]
-                
+                    annotation_text = annotation_fix_dict[row.name].split(" ")[-1]
                 pitch.annotate(annotation_text, xy=(row.x, row.y+3),
                                 c='white', va='center', ha='center',
                                 size=10, fontweight='bold',
@@ -315,7 +307,11 @@ def team_convex_hull(match_id, team, ax, inverse=False):
                 tempdf = tempdf[np.abs(stats.zscore(tempdf[['x','y']])) < 0.75]
                 actions =  tempdf[['x','y']].dropna().values
                 
-                pitch.annotate(player, xy=(np.mean(tempdf.x), np.mean(tempdf.y)),
+                if player not in annotation_fix_dict.keys():
+                    annotation_text = player.split(" ")[-1]
+                else:
+                    annotation_text = annotation_fix_dict[player].split(" ")[-1]
+                pitch.annotate(annotation_text, xy=(np.mean(tempdf.x), np.mean(tempdf.y)),
                                 c=colordict[player], va='center', ha='center',
                                 size=10, fontweight='bold',
                                 ax=ax)
@@ -456,20 +452,14 @@ def passing_sonars(match_id, team, ax, inverse=False):
 
         for index, row in average_location.iterrows():
                 if row.name in startingXI:
-                        if row.name.split(" ")[-1] not in annotation_fix_dict.keys():
-                                if team not in ['Spain']:
-                                        annotation_text = row.name.split(" ")[-1] 
-                                else:
-                                        annotation_text = row.name.split(" ")[-2] 
-                                        if annotation_text in annotation_fix_dict.keys():
-                                                annotation_text = annotation_fix_dict[annotation_text]
-                        else:
-                                annotation_text = annotation_fix_dict[row.name.split(" ")[-1]]
-
-                        pitch.annotate(annotation_text, xy=(row.x, row.y+4.5),
-                                c='white', va='center', ha='center',
-                                size=9, fontweight='bold',
-                                ax=ax)
+                    if row.name not in annotation_fix_dict.keys():
+                        annotation_text = row.name.split(" ")[-1]
+                    else:
+                        annotation_text = annotation_fix_dict[row.name].split(" ")[-1]
+                    pitch.annotate(annotation_text, xy=(row.x, row.y+4.5),
+                            c='white', va='center', ha='center',
+                            size=9, fontweight='bold',
+                            ax=ax)
 
         ax.set_title(f'{team} Passing Sonars', color='white', fontsize=20, fontweight='bold', fontfamily='Monospace', pad=-5)
 

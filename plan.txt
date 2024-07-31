@@ -27,6 +27,6 @@ side column plots:
 
 
 
-spain - germany passing network
+spain - germany passing network (problem with quick player subs)
 
 goals on xG flow - own goals (?)
