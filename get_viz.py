@@ -129,7 +129,7 @@ def passing_network(match_id, team, ax, inverse=False):
         passes = sb.events(match_id=match_id, split=True, flatten_attrs=False)["passes"]
 
         passes = sb.events(match_id=match_id, split=True, flatten_attrs=False)["passes"]
-        passes = passes[passes['team']=='Spain']
+        passes = passes[passes['team']==team]
         passes["recipient"] = [passes["pass"][i]["recipient"]["name"]
                         if list(passes.loc[i]["pass"].keys())[0]=="recipient"
                         else None
@@ -576,7 +576,7 @@ def shot_xg(match_id, team, ax, inverse=False):
 def pass_heatmap(match_id, team, ax, inverse=False):
     passes = sb.events(match_id=match_id, split=True, flatten_attrs=False)["passes"]
     passes = passes.query(f'team == "{team}"')
-    
+
     pitch = Pitch(pitch_type='statsbomb', pitch_color='#0e1117', line_color='#c7d5cc')
     pitch.draw(ax=ax)
 
