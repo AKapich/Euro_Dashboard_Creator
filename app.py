@@ -1,12 +1,9 @@
 import streamlit as st
 from streamlit_extras.badges import badge
-from auxiliary import match_dict, matches, country_colors
-from get_viz import viz_dict
-
-import pandas as pd
-import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 from PIL import Image
+from auxiliary import match_dict, matches, country_colors
+from get_viz import viz_dict
 
 
 st.set_page_config(
@@ -24,6 +21,7 @@ st.sidebar.title("Select Match")
 selected_match = st.sidebar.selectbox("Match:", match_dict.keys(), index=1)
 
 match_id = match_dict[selected_match]
+match_data = matches.query('match_id == @match_id').iloc[0]
 home_team = selected_match.split(' - ')[0]
 away_team = selected_match.split(' - ')[1]
 competition_stage = matches[matches['match_id']==match_id].iloc[0]['competition_stage']
@@ -31,10 +29,7 @@ competition_stage = matches[matches['match_id']==match_id].iloc[0]['competition_
 
 side_charts = ["None", "Passing Network", "Passing Sonars", "Shot xG", "Pass Heatmap", "xT Heatmap", "Pressure Heatmap",  "Action Territories",
                'Progressive Passes', "Passes to Final 3rd", "Passes to Penalty Area"]
-
-middle_charts = ["None", "Overview", 'xG Flow', "Voronoi Diagram", 'xT by Players', "Shot Types"]
-
-match_data = matches.query('match_id == @match_id').iloc[0]
+middle_charts = ["None", "Overview", 'xT Momentum', 'xG Flow', "Voronoi Diagram", 'xT by Players', "Shot Types"]
 ##################################################################
 
 tab1, tab2 = st.tabs(["Creator Menu", "Dashboard Overview"])
@@ -115,16 +110,14 @@ buf.seek(0)
 st.sidebar.download_button(
     label="Download Your Dashboard",
     data=buf,
-    file_name="dashboard.png",
+    file_name=f"{home_team}_vs_{away_team}_dashboard.png",
     mime="image/png"
 )
 
-##################################################################
 st.markdown('---')
 st.image('https://raw.githubusercontent.com/AKapich/WorldCup_App/main/app/sb_icon.png',
           caption='App made by Aleks Kapich. Data powered by StatsBomb', use_column_width=True)
 
-# signature
 st.sidebar.markdown('---')
 col1, col2 = st.columns(2)
 with col1:

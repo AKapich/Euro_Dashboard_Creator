@@ -1,19 +1,20 @@
 from statsbombpy import sb
-
 from mplsoccer.pitch import Pitch, VerticalPitch
 from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.lines import Line2D
 from matplotlib.colors import LinearSegmentedColormap
+import matplotlib.patches as pat
 import pandas as pd
 import numpy as np
 import seaborn as sns
 from scipy import stats
 from scipy.spatial import ConvexHull
+from scipy.ndimage import gaussian_filter1d
 
 import warnings
 warnings.filterwarnings("ignore")
 
-from auxiliary import country_colors, annotation_fix_dict, lighten_hex_color, get_players_xT
+from auxiliary import country_colors, annotation_fix_dict, lighten_hex_color, get_players_xT, get_xT, get_starting_XI
 
 
 
@@ -68,16 +69,14 @@ def voronoi(match_id, home_team, away_team, ax):
                         df['x'][i] = 120-df['x'][i]
                         df['y'][i] = 80-df['y'][i]
 
-
-        
         pitch = Pitch(pitch_type='statsbomb', pitch_color='#0e1117', line_color='#c7d5cc')
         pitch.draw(ax=ax)
 
         pitch.voronoi(df.x, df.y, df.team)
         team1,team2 = pitch.voronoi(df.x, df.y, df.team_id)
 
-        t1 = pitch.polygon(team1, ax=ax, fc=country_colors[home_team], ec='white', lw=3, alpha=0.5)
-        t2 = pitch.polygon(team2, ax=ax, fc=country_colors[away_team], ec='white', lw=3, alpha=0.5)
+        pitch.polygon(team1, ax=ax, fc=country_colors[home_team], ec='white', lw=3, alpha=0.5)
+        pitch.polygon(team2, ax=ax, fc=country_colors[away_team], ec='white', lw=3, alpha=0.5)
 
         # Plot players
         for i in range(len(df['x'])):
@@ -128,24 +127,17 @@ def pressure_heatmap(match_id, team, ax, inverse=False):
 
 def passing_network(match_id, team, ax, inverse=False):
         passes = sb.events(match_id=match_id, split=True, flatten_attrs=False)["passes"]
-        passes = passes[passes.team==team]
-        passes.index = range(len(passes))
 
-        # We filter out only successful passes
+        passes = sb.events(match_id=match_id, split=True, flatten_attrs=False)["passes"]
+        passes = passes[passes['team']=='Spain']
         passes["recipient"] = [passes["pass"][i]["recipient"]["name"]
-                        if list(passes.iloc[i]["pass"].keys())[0]=="recipient"
+                        if list(passes.loc[i]["pass"].keys())[0]=="recipient"
                         else None
-                        for i in range(len(passes))]
-        passes = passes[passes["recipient"]!=None]
+                        for i in passes.index]
+        passes = passes[passes["recipient"].notna()]
 
-        # Chart may be created for the time until the first substitution
-        events = sb.events(match_id=match_id)
-        subs = events[events["substitution_outcome"].notna()]
-        min_threshold = min(subs["minute"])
-        sec_threshold = min(subs["second"])
-        
-        passes = passes[(passes["minute"]<min_threshold) |
-                        ((passes["minute"]==min_threshold) & (passes["second"]<sec_threshold))]
+        startingXI = get_starting_XI(match_id, team)
+        passes = passes[passes['player'].isin(startingXI) & passes['recipient'].isin(startingXI)]
 
         passes['x'], passes['y'] = zip(*passes['location'])
         if inverse:
@@ -158,11 +150,8 @@ def passing_network(match_id, team, ax, inverse=False):
         passes_between = passes_between.rename(columns={'id': 'pass_count'})
 
         # 'average_location' index is in fact 'player' column, therefore below right_index=True (we merge by it)
-        
-        passes_between = passes_between.merge(average_location,
-                                        left_on="player", right_index=True)
-        passes_between = passes_between.merge(average_location,
-                                        left_on='recipient', right_index=True, suffixes=('','_end'))
+        passes_between = passes_between.merge(average_location, left_on="player", right_index=True)
+        passes_between = passes_between.merge(average_location, left_on='recipient', right_index=True, suffixes=('','_end'))
         # setting a threshold for minimum 2 passes between players to be noted on the chart
         passes_between = passes_between.loc[(passes_between['pass_count']>1)]
 
@@ -170,19 +159,19 @@ def passing_network(match_id, team, ax, inverse=False):
         pitch = Pitch(pitch_type='statsbomb', pitch_color='#0e1117', line_color='#c7d5cc')
         pitch.draw(ax=ax)
 
-        arrows = pitch.arrows(passes_between.x, passes_between.y,
+        pitch.arrows(passes_between.x, passes_between.y,
                         passes_between.x_end, passes_between.y_end,
-                        #color='#ecd09f',
                         color='#d4d4d4',
                         alpha=pd.to_numeric(passes_between["pass_count"], downcast="float")/max(passes_between["pass_count"]),
-                        ax=ax)
-        nodes = pitch.scatter(average_location.x, average_location.y,
+                        ax=ax
+                    )
+        pitch.scatter(average_location.x, average_location.y,
                         s = pd.to_numeric(average_location["count"], downcast="float")*25,
-                        #alpha = pd.to_numeric(average_location["count"], downcast="float")/max(average_location["count"]),
                         color=country_colors[team], edgecolors='white',
-                        ax=ax)
+                        ax=ax
+                    )
 
-        for index, row in average_location.iterrows():
+        for _, row in average_location.iterrows():
                 if row.name not in annotation_fix_dict.keys():
                     annotation_text = row.name.split(" ")[-1]
                 else:
@@ -190,7 +179,8 @@ def passing_network(match_id, team, ax, inverse=False):
                 pitch.annotate(annotation_text, xy=(row.x, row.y+3),
                                 c='white', va='center', ha='center',
                                 size=10, fontweight='bold',
-                                ax=ax)
+                                ax=ax
+                            )
                 
         ax.set_title(f'{team} Passing Network', color='white', fontsize=20, fontweight='bold', fontfamily='Monospace', pad=-5)
 
@@ -285,23 +275,22 @@ def penalty_passes(match_id, team, ax, inverse=False):
 def team_convex_hull(match_id, team, ax, inverse=False):
         events = sb.events(match_id=match_id)
         events = events[events["team"]==team]
-        starters = [p['player']['name'] for p in events[events['type']=='Starting XI']['tactics'].values[0]['lineup']]
+        startingXI = get_starting_XI(match_id, team)
 
         events = events[events["location"].notna()]
         events['x'], events['y'] = zip(*events['location'])
         if inverse:
                 events['x'] = 120 - events['x']
                 events['y'] = 80 - events['y']
-
         
         pitch = Pitch(pitch_type='statsbomb', pitch_color='#0e1117', line_color='#c7d5cc')
         pitch.draw(ax=ax)
 
         colors = ['#eb4034', '#ebdb34', '#98eb34', '#34eb77', '#be9cd9', '#5797e6',
                    '#fbddad', '#de34eb', '#eb346b', '#34ebcc', '#dbd5d5']
-        colordict = dict(zip(starters, colors))
+        colordict = dict(zip(startingXI, colors))
 
-        for player in starters:
+        for player in startingXI:
                 tempdf = events[events["player"]==player]
                 # threshold of 0.75 sd
                 tempdf = tempdf[np.abs(stats.zscore(tempdf[['x','y']])) < 0.75]
@@ -400,8 +389,7 @@ def passing_sonars(match_id, team, ax, inverse=False):
         pass_sonar = pd.concat([pass_sonar, counter["amount"]], axis=1)
 
         # average location of players
-        passes["x"] = [location[0] for location in passes["location"]]
-        passes["y"] = [location[1] for location in passes["location"]]
+        passes['x'], passes['y'] = zip(*passes['location'])
         passes = passes[passes['team']==team]
         average_location = passes.groupby('player').agg({'x': ['mean'], 'y': ['mean']})
         average_location.columns = ['x', 'y']
@@ -413,27 +401,17 @@ def passing_sonars(match_id, team, ax, inverse=False):
 
         pass_sonar = pass_sonar.merge(average_location, left_on="player", right_index=True)
 
-        lineups = sb.lineups(match_id=match_id)[team]
-        lineups['starter'] = [lineups['positions'][i][0]['start_reason']=='Starting XI'
-                        if lineups['positions'][i]!=[]
-                        else None
-                        for i in range(len(lineups))]
-        lineups = lineups[lineups["starter"]==True]
-        # we need the starting lineups
-        startingXI = list(lineups.player_name)
-        pass_sonar = pass_sonar[pass_sonar['player'].isin(startingXI)]
-        pass_sonar
+        startingXI = get_starting_XI(match_id, team)
 
+        pass_sonar = pass_sonar[pass_sonar['player'].isin(startingXI)]
         
         pitch = Pitch(pitch_type='statsbomb', pitch_color='#0e1117', line_color='#c7d5cc')
         pitch.draw(ax=ax)
 
-        import matplotlib.patches as pat
         for player in startingXI:
                 for _, row in pass_sonar[pass_sonar.player == player].iterrows():
                         theta_left_start = 198
 
-                        # color = "gold" if row.amount < 3 else "darkorange" if row.amount < 5 else '#9f1b1e'
                         opacity = 0.4 if row.amount < 3 else 0.77 if row.amount < 5 else 1
                         
                         theta_left = theta_left_start + (360 / 20) * (row.angle_bin)
@@ -450,7 +428,7 @@ def passing_sonars(match_id, team, ax, inverse=False):
                         )
                         ax.add_patch(pass_wedge)
 
-        for index, row in average_location.iterrows():
+        for _, row in average_location.iterrows():
                 if row.name in startingXI:
                     if row.name not in annotation_fix_dict.keys():
                         annotation_text = row.name.split(" ")[-1]
@@ -598,7 +576,6 @@ def shot_xg(match_id, team, ax, inverse=False):
 def pass_heatmap(match_id, team, ax, inverse=False):
     passes = sb.events(match_id=match_id, split=True, flatten_attrs=False)["passes"]
     passes = passes.query(f'team == "{team}"')
-
     
     pitch = Pitch(pitch_type='statsbomb', pitch_color='#0e1117', line_color='#c7d5cc')
     pitch.draw(ax=ax)
@@ -661,6 +638,8 @@ def xT_scatterplot(match_id, home_team, away_team, ax):
         
     ax.set_xlabel('Pass xT', fontname='Monospace',color='white',fontsize=16)
     ax.set_ylabel('Carry xT', fontname='Monospace',color='white',fontsize=16)
+    ax.tick_params(axis='x', colors='white')
+    ax.tick_params(axis='y', colors='white')
 
     for x in ['top','bottom','left','right']:
             if x in ['top', 'right']:
@@ -672,28 +651,10 @@ def xT_scatterplot(match_id, home_team, away_team, ax):
 
        
 def xT_heatmap(match_id, team, ax, inverse=False):
-    xT = pd.read_csv("https://raw.githubusercontent.com/AKapich/WorldCup_App/main/app/xT_Grid.csv", header=None)
-    xT = np.array(xT)
-    xT_rows, xT_cols = xT.shape 
     events = sb.events(match_id=match_id)
     events = events[events['team']==team]
 
-    def get_xT(type):
-        df = events[events['type']==type]
-        df['start_x'], df['start_y'] = zip(*df['location'])
-        df['end_x'], df['end_y'] = zip(*df[f'{type.lower()}_end_location'])
-
-        df[f'start_x_bin'] = pd.cut(df['start_x'], bins=xT_cols, labels=False)
-        df[f'start_y_bin'] = pd.cut(df['start_y'], bins=xT_rows, labels=False)
-        df[f'end_x_bin'] = pd.cut(df['end_x'], bins=xT_cols, labels=False)
-        df[f'end_y_bin'] = pd.cut(df['end_x'], bins=xT_rows, labels=False)
-        df['start_zone_value'] = df[[f'start_x_bin', f'start_y_bin']].apply(lambda z: xT[z[1]][z[0]], axis=1)
-        df['end_zone_value'] = df[[f'end_x_bin', f'end_y_bin']].apply(lambda z: xT[z[1]][z[0]], axis=1)
-        df['xT'] = df['start_zone_value']-df['end_zone_value']
-
-        return df[['xT', 'start_x', 'start_y', 'end_x', 'end_y', 'type']]
-
-    xtdf = pd.concat([get_xT('Pass'), get_xT('Carry')], axis=0)
+    xtdf = pd.concat([get_xT(events, 'Pass'), get_xT(events, 'Carry')], axis=0)
     
     if inverse:
         xtdf['start_x'] = 120 - xtdf['start_x']
@@ -719,6 +680,68 @@ def xT_heatmap(match_id, team, ax, inverse=False):
     ax.set_title(f'{team} xT Pass+Carry (Start Zones)', color='white', fontsize=20, fontweight='bold', fontfamily='Monospace', pad=-5)
 
 
+def xT_momentum(match_id, home_team, away_team, ax):
+    df = sb.events(match_id=match_id)
+    home_color, away_color = country_colors[home_team], country_colors[away_team]
+
+    xT_data = pd.concat([get_xT(events=df, type='Pass', momentum=True), get_xT(events=df, type='Carry', momentum=True)], axis=0)
+    xT_data['xT_clipped'] = np.clip(xT_data['xT'], 0, 0.1)
+
+    max_xT_per_minute = xT_data.groupby(['team', 'minute'])['xT_clipped'].max().reset_index()
+
+    minutes = sorted(xT_data['minute'].unique())
+    weighted_xT_sum = {team: [] for team in max_xT_per_minute['team'].unique()}
+    momentum = []
+
+    window_size = 4
+    decay_rate = 0.25
+
+    for current_minute in minutes:
+        for team in weighted_xT_sum:
+            recent_xT_values = max_xT_per_minute[(max_xT_per_minute['team'] == team) & 
+                                                    (max_xT_per_minute['minute'] <= current_minute) & 
+                                                    (max_xT_per_minute['minute'] > current_minute - window_size)]
+            
+            weights = np.exp(-decay_rate * (current_minute - recent_xT_values['minute'].values))
+            weighted_sum = np.sum(weights * recent_xT_values['xT_clipped'].values)
+            weighted_xT_sum[team].append(weighted_sum)
+
+        momentum.append(weighted_xT_sum[home_team][-1] - weighted_xT_sum[away_team][-1])
+
+    momentum_df = pd.DataFrame({
+        'minute': minutes,
+        'momentum': momentum
+    })
+
+    ax.axis('on')
+    ax.tick_params(axis='x', colors='white')
+    ax.tick_params(axis='y', which='both', left=False, right=False, labelleft=False)
+    for spine in ['top', 'right', 'bottom', 'left']:
+        ax.spines[spine].set_visible(False)
+    ax.set_xticks([0,15,30,45,60,75,90])
+    ax.margins(x=0)
+    ax.set_ylim(-0.12, 0.12)
+
+    momentum_df['smoothed_momentum'] = gaussian_filter1d(momentum_df['momentum'], sigma=1)
+    ax.plot(momentum_df['minute'], momentum_df['smoothed_momentum'], color='white')
+
+    ax.axhline(0, color='white', linestyle='--', linewidth=0.5)
+    ax.fill_between(momentum_df['minute'], momentum_df['smoothed_momentum'], where=(momentum_df['smoothed_momentum'] > 0), color=home_color, alpha=0.5, interpolate=True)
+    ax.fill_between(momentum_df['minute'], momentum_df['smoothed_momentum'], where=(momentum_df['smoothed_momentum'] < 0), color=away_color, alpha=0.5, interpolate=True) 
+
+    ax.set_xlabel('Minute', color='white', fontsize=15, fontweight='bold', fontfamily='Monospace')
+    ax.set_ylabel('Momentum', color='white', fontsize=15, fontweight='bold', fontfamily='Monospace')
+    ax.set_title(f'xT Momentum', color='white', fontsize=20, fontweight='bold', fontfamily='Monospace', pad=-5)
+
+    goals = df[(df['shot_outcome']=='Goal') | (df['type']=='Own Goal For')][['minute', 'team']]
+
+    for _, row in goals.iterrows():
+        ymin, ymax = (0.5, 0.9) if row['team'] == home_team else (0.1, 0.5)
+        ax.axvline(row['minute'], color='white', linestyle='--', linewidth=1.2, alpha=0.8, ymin=ymin, ymax=ymax)
+        ax.scatter(row['minute'], (1 if row['team'] == home_team else -1)*0.10, color='white', s=100, zorder=10, alpha=1)
+        ax.text(row['minute']+0.1, (1 if row['team'] == home_team else -1)*0.11, 'Goal', fontsize=10, ha='center', va='center', fontfamily="Monospace", color='white')
+
+
 viz_dict = {
         "Overview": overview,
         "Voronoi Diagram": voronoi,
@@ -734,5 +757,6 @@ viz_dict = {
         'xT by Players': xT_scatterplot,
         'xT Heatmap': xT_heatmap,
         'Passes to Final 3rd': final_3rd_passes,
-        'Passes to Penalty Area': penalty_passes
+        'Passes to Penalty Area': penalty_passes,
+        'xT Momentum': xT_momentum
 }

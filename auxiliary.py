@@ -2,7 +2,7 @@ from statsbombpy import sb
 import pandas as pd
 import numpy as np
 
-# Data from World Cup 2022
+# Data from Euro 2024
 matches = sb.matches(competition_id=55, season_id=282)
 match_dict = {home+' - '+away: match_id
                  for match_id, home, away
@@ -39,14 +39,11 @@ country_colors = {
 def get_starting_XI(match_id, team):
     events = sb.events(match_id=match_id)
     events = events[events["team"]==team]
-    players = events[pd.isna(events["player"])==False]["player"].unique()
-    eleven = players[:11] # first eleven
-
-    lineups = sb.lineups(match_id)
-    lineup = lineups[team][lineups[team]['player_name'].isin(list(set(eleven)))][['player_name', 'jersey_number']].sort_values('jersey_number')
-    lineup.columns = ['Player', 'Number']
-    lineup.index = lineup['Number']
-    return lineup['Player']
+    startingXI = [p['player']['name'] for p in events[events['type']=='Starting XI']['tactics'].values[0]['lineup']]
+    early_replacements = events[events['substitution_replacement'].notna()][events['minute']<30]
+    early_replacements_dict = dict(zip(early_replacements['player'], early_replacements['substitution_replacement']))
+    startingXI = [p if p not in early_replacements_dict.keys() else early_replacements_dict[p] for p in startingXI]
+    return startingXI
 
 
 def lighten_hex_color(hex_color, percentage):
@@ -56,14 +53,6 @@ def lighten_hex_color(hex_color, percentage):
     r, g, b = min(255, int(r)), min(255, int(g)), min(255, int(b))
     
     return "#{:02x}{:02x}{:02x}".format(r, g, b)
-
-
-# def darken_hex_color(hex_color, percentage):
-#     hex_color = hex_color.lstrip('#')
-#     r, g, b = int(hex_color[0:2], 16), int(hex_color[2:4], 16), int(hex_color[4:6], 16)
-#     r, g, b = int(r * (1 - percentage)), int(g * (1 - percentage)), int(b * (1 - percentage))
-    
-#     return "#{:02x}{:02x}{:02x}".format(r, g, b)
 
 
 def get_players_xT(match_id):
@@ -99,6 +88,29 @@ def get_players_xT(match_id):
     players = players.sort_values('total_xT', ascending=False)
 
     return players
+
+
+def get_xT(events, type, momentum=False):
+    xT = pd.read_csv("https://raw.githubusercontent.com/AKapich/WorldCup_App/main/app/xT_Grid.csv", header=None)
+    xT = np.array(xT)
+    xT_rows, xT_cols = xT.shape 
+
+    df = events[events['type']==type]
+    df['start_x'], df['start_y'] = zip(*df['location'])
+    df['end_x'], df['end_y'] = zip(*df[f'{type.lower()}_end_location'])
+
+    df[f'start_x_bin'] = pd.cut(df['start_x'], bins=xT_cols, labels=False)
+    df[f'start_y_bin'] = pd.cut(df['start_y'], bins=xT_rows, labels=False)
+    df[f'end_x_bin'] = pd.cut(df['end_x'], bins=xT_cols, labels=False)
+    df[f'end_y_bin'] = pd.cut(df['end_x'], bins=xT_rows, labels=False)
+    df['start_zone_value'] = df[[f'start_x_bin', f'start_y_bin']].apply(lambda z: xT[z[1]][z[0]], axis=1)
+    df['end_zone_value'] = df[[f'end_x_bin', f'end_y_bin']].apply(lambda z: xT[z[1]][z[0]], axis=1)
+    df['xT'] = df['start_zone_value']-df['end_zone_value']
+    
+    if not momentum:
+        return df[['xT', 'start_x', 'start_y', 'end_x', 'end_y', 'type']]
+    else:
+        return df[['xT', 'minute', 'second', 'team', 'type']]
 
 
 annotation_fix_dict = {
