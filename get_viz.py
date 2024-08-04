@@ -718,7 +718,7 @@ def xT_momentum(match_id, home_team, away_team, ax):
         ax.spines[spine].set_visible(False)
     ax.set_xticks([0,15,30,45,60,75,90])
     ax.margins(x=0)
-    ax.set_ylim(-0.12, 0.12)
+    ax.set_ylim(-0.08, 0.08)
 
     momentum_df['smoothed_momentum'] = gaussian_filter1d(momentum_df['momentum'], sigma=1)
     ax.plot(momentum_df['minute'], momentum_df['smoothed_momentum'], color='white')
@@ -734,10 +734,10 @@ def xT_momentum(match_id, home_team, away_team, ax):
     goals = df[(df['shot_outcome']=='Goal') | (df['type']=='Own Goal For')][['minute', 'team']]
 
     for _, row in goals.iterrows():
-        ymin, ymax = (0.5, 0.9) if row['team'] == home_team else (0.1, 0.5)
+        ymin, ymax = (0.5, 0.86) if row['team'] == home_team else (0.14, 0.5)
         ax.axvline(row['minute'], color='white', linestyle='--', linewidth=1.2, alpha=0.8, ymin=ymin, ymax=ymax)
-        ax.scatter(row['minute'], (1 if row['team'] == home_team else -1)*0.10, color='white', s=100, zorder=10, alpha=1)
-        ax.text(row['minute']+0.1, (1 if row['team'] == home_team else -1)*0.11, 'Goal', fontsize=10, ha='center', va='center', fontfamily="Monospace", color='white')
+        ax.scatter(row['minute'], (1 if row['team'] == home_team else -1)*0.06, color='white', s=100, zorder=10, alpha=1)
+        ax.text(row['minute']+0.1, (1 if row['team'] == home_team else -1)*0.067, 'Goal', fontsize=10, ha='center', va='center', fontfamily="Monospace", color='white')
 
 
 viz_dict = {
