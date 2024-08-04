@@ -15,11 +15,12 @@ import warnings
 warnings.filterwarnings("ignore")
 
 from auxiliary import country_colors, annotation_fix_dict, lighten_hex_color, get_players_xT, get_xT, get_starting_XI
+from auxiliary import fetch_match_data, fetch_match_pass_data, fetch_match_shot_data
 
 
 
 def overview(match_id, home_team, away_team, ax):
-        events = sb.events(match_id=match_id)
+        events = fetch_match_data(match_id)
 
         def get_basic_data(team, events):
             shots = events[(events['type'] == 'Shot') & (events['team'] == team)]
@@ -48,7 +49,7 @@ def overview(match_id, home_team, away_team, ax):
 
 
 def voronoi(match_id, home_team, away_team, ax):
-        df = sb.events(match_id=match_id)
+        df = fetch_match_data(match_id)
 
         subs = df[df["substitution_outcome"].notna()]
         min_threshold = min(subs["minute"])
@@ -96,7 +97,7 @@ def voronoi(match_id, home_team, away_team, ax):
 
 
 def pressure_heatmap(match_id, team, ax, inverse=False):
-        events = sb.events(match_id=match_id, split=True, flatten_attrs=False)
+        events = fetch_match_data(match_id)
         press = events['pressures'].query(f"team=='{team}'")
         press_x, press_y = zip(*press['location'])
         if inverse:
@@ -126,9 +127,7 @@ def pressure_heatmap(match_id, team, ax, inverse=False):
 
 
 def passing_network(match_id, team, ax, inverse=False):
-        passes = sb.events(match_id=match_id, split=True, flatten_attrs=False)["passes"]
-
-        passes = sb.events(match_id=match_id, split=True, flatten_attrs=False)["passes"]
+        passes = fetch_match_pass_data(match_id)
         passes = passes[passes['team']==team]
         passes["recipient"] = [passes["pass"][i]["recipient"]["name"]
                         if list(passes.loc[i]["pass"].keys())[0]=="recipient"
@@ -186,7 +185,7 @@ def passing_network(match_id, team, ax, inverse=False):
 
 
 def progressive_passes(match_id, team, ax, inverse=False):
-        passes = sb.events(match_id=match_id, split=True, flatten_attrs=False)["passes"]
+        passes = fetch_match_pass_data(match_id)
         df = passes[passes.team==team]
         
         df[['start_x', 'start_y']] = pd.DataFrame(df['location'].tolist(), index=df.index)
@@ -219,7 +218,7 @@ def progressive_passes(match_id, team, ax, inverse=False):
 
 
 def final_3rd_passes(match_id, team, ax, inverse=False):
-        passes = sb.events(match_id=match_id, split=True, flatten_attrs=False)["passes"]
+        passes = fetch_match_pass_data(match_id)
         df = passes[passes.team==team]
         
         df[['start_x', 'start_y']] = pd.DataFrame(df['location'].tolist(), index=df.index)
@@ -246,7 +245,7 @@ def final_3rd_passes(match_id, team, ax, inverse=False):
 
 
 def penalty_passes(match_id, team, ax, inverse=False):
-        passes = sb.events(match_id=match_id, split=True, flatten_attrs=False)["passes"]
+        passes = fetch_match_pass_data(match_id)
         df = passes[passes.team==team]
         
         df[['start_x', 'start_y']] = pd.DataFrame(df['location'].tolist(), index=df.index)
@@ -273,7 +272,7 @@ def penalty_passes(match_id, team, ax, inverse=False):
 
 
 def team_convex_hull(match_id, team, ax, inverse=False):
-        events = sb.events(match_id=match_id)
+        events = fetch_match_data(match_id)
         events = events[events["team"]==team]
         startingXI = get_starting_XI(match_id, team)
 
@@ -336,7 +335,7 @@ def shot_types(match_id, home_team, away_team, ax):
         pitch = VerticalPitch(pitch_type='statsbomb', pitch_color='#0e1117', line_color='#c7d5cc')
         pitch.draw(ax=ax)
 
-        shots = sb.events(match_id=match_id, split=True, flatten_attrs=False)["shots"]
+        shots = fetch_match_shot_data(match_id)
 
         shots[['start_x', 'start_y']] = pd.DataFrame(shots['location'].tolist(), index=shots.index)
         shots.index = range(len(shots))
@@ -370,8 +369,7 @@ def shot_types(match_id, home_team, away_team, ax):
 
 
 def passing_sonars(match_id, team, ax, inverse=False):
-        # passing sonars
-        passes = sb.events(match_id=match_id, split=True, flatten_attrs=False)["passes"]
+        passes = fetch_match_pass_data(match_id)
         df = passes[passes['team']==team]
         df = df[['pass', 'player']]
         df.index = range(len(df))
@@ -443,7 +441,7 @@ def passing_sonars(match_id, team, ax, inverse=False):
 
 
 def xG_flow(match_id, home_team, away_team, ax):
-        shots = sb.events(match_id=match_id, split=True, flatten_attrs=False)["shots"]
+        shots = fetch_match_shot_data(match_id)
         shots.index = range(len(shots))
 
         shots["xG"] = [shots["shot"][i]["statsbomb_xg"] for i in range(len(shots))]
@@ -516,7 +514,7 @@ def xG_flow(match_id, home_team, away_team, ax):
                         xytext=(0,10), ha='center', color='white', fontsize=10, fontname='Monospace')
         
         # Handling Own Goals
-        events = sb.events(match_id=match_id)
+        events = fetch_match_data(match_id)
         for _, row in events.query('type == "Own Goal Against"').iterrows():
             color = country_colors[home_team] if row['team'] == away_team else country_colors[away_team]
             for_team = home_team if row['team'] == away_team else away_team
@@ -546,7 +544,7 @@ def xG_flow(match_id, home_team, away_team, ax):
 
 
 def shot_xg(match_id, team, ax, inverse=False):
-    events = sb.events(match_id=match_id)
+    events = fetch_match_data(match_id)
     shots = events.query(f' type == "Shot" and team == "{team}"')
     shots['x'], shots['y'] = zip(*shots['location'])
 
@@ -574,7 +572,7 @@ def shot_xg(match_id, team, ax, inverse=False):
 
 
 def pass_heatmap(match_id, team, ax, inverse=False):
-    passes = sb.events(match_id=match_id, split=True, flatten_attrs=False)["passes"]
+    passes = fetch_match_pass_data(match_id)
     passes = passes.query(f'team == "{team}"')
 
     pitch = Pitch(pitch_type='statsbomb', pitch_color='#0e1117', line_color='#c7d5cc')
@@ -651,7 +649,7 @@ def xT_scatterplot(match_id, home_team, away_team, ax):
 
        
 def xT_heatmap(match_id, team, ax, inverse=False):
-    events = sb.events(match_id=match_id)
+    events = fetch_match_data(match_id)
     events = events[events['team']==team]
 
     xtdf = pd.concat([get_xT(events, 'Pass'), get_xT(events, 'Carry')], axis=0)
@@ -681,7 +679,7 @@ def xT_heatmap(match_id, team, ax, inverse=False):
 
 
 def xT_momentum(match_id, home_team, away_team, ax):
-    df = sb.events(match_id=match_id)
+    df = fetch_match_data(match_id)
     home_color, away_color = country_colors[home_team], country_colors[away_team]
 
     xT_data = pd.concat([get_xT(events=df, type='Pass', momentum=True), get_xT(events=df, type='Carry', momentum=True)], axis=0)

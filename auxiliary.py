@@ -1,12 +1,27 @@
 from statsbombpy import sb
 import pandas as pd
 import numpy as np
+import streamlit as st
 
 # Data from Euro 2024
 matches = sb.matches(competition_id=55, season_id=282)
 match_dict = {home+' - '+away: match_id
                  for match_id, home, away
                  in zip(matches['match_id'], matches['home_team'], matches['away_team'])}
+
+
+@st.cache_data(ttl=600)
+def fetch_match_data(match_id):
+    return sb.events(match_id=match_id)
+
+@st.cache_data(ttl=600)
+def fetch_match_pass_data(match_id):
+    return sb.events(match_id=match_id, split=True, flatten_attrs=False)["passes"]
+
+@st.cache_data(ttl=600)
+def fetch_match_shot_data(match_id):
+    return sb.events(match_id=match_id, split=True, flatten_attrs=False)["shots"]
+
 
 country_colors = {
     "Poland": "#de1a41",
@@ -18,7 +33,7 @@ country_colors = {
     "Belgium": "#FFD700",
     "Spain": "#fd112a",
     "Croatia": "#0766af",
-    "England": "#002366",
+    "England": "#002366", 
     "Serbia": "#711e28",
     "Switzerland": "#FF0000",
     "Scotland": '#006cb7',
@@ -37,7 +52,7 @@ country_colors = {
 
 
 def get_starting_XI(match_id, team):
-    events = sb.events(match_id=match_id)
+    events = fetch_match_data(match_id)
     events = events[events["team"]==team]
     startingXI = [p['player']['name'] for p in events[events['type']=='Starting XI']['tactics'].values[0]['lineup']]
     early_replacements = events[events['substitution_replacement'].notna()][events['minute']<30]
