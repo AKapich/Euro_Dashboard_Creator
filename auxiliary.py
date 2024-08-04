@@ -22,6 +22,10 @@ def fetch_match_pass_data(match_id):
 def fetch_match_shot_data(match_id):
     return sb.events(match_id=match_id, split=True, flatten_attrs=False)["shots"]
 
+@st.cache_data(ttl=600)
+def fetch_match_split_data(match_id):
+    return sb.events(match_id=match_id, split=True, flatten_attrs=False)
+
 
 country_colors = {
     "Poland": "#de1a41",

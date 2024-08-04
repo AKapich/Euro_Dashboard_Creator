@@ -15,7 +15,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 from auxiliary import country_colors, annotation_fix_dict, lighten_hex_color, get_players_xT, get_xT, get_starting_XI
-from auxiliary import fetch_match_data, fetch_match_pass_data, fetch_match_shot_data
+from auxiliary import fetch_match_data, fetch_match_pass_data, fetch_match_shot_data, fetch_match_split_data
 
 
 
@@ -97,7 +97,7 @@ def voronoi(match_id, home_team, away_team, ax):
 
 
 def pressure_heatmap(match_id, team, ax, inverse=False):
-        events = fetch_match_data(match_id)
+        events = fetch_match_split_data(match_id)
         press = events['pressures'].query(f"team=='{team}'")
         press_x, press_y = zip(*press['location'])
         if inverse:
