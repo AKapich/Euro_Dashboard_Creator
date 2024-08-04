@@ -14,7 +14,7 @@ from scipy.ndimage import gaussian_filter1d
 import warnings
 warnings.filterwarnings("ignore")
 
-from auxiliary import country_colors, annotation_fix_dict, lighten_hex_color, get_players_xT, get_xT, get_starting_XI
+from auxiliary import country_colors, annotation_fix_dict, lighten_hex_color, darken_hex_color, get_players_xT, get_xT, get_starting_XI
 from auxiliary import fetch_match_data, fetch_match_pass_data, fetch_match_shot_data, fetch_match_split_data
 
 
@@ -664,9 +664,9 @@ def xT_heatmap(match_id, team, ax, inverse=False):
     pitch = Pitch(pitch_type='statsbomb', pitch_color='#0e1117', line_color='white', line_zorder=2)
     pitch.draw(ax=ax)
 
-    bin_statistic = pitch.bin_statistic(xtdf.start_x, xtdf.start_y, values=xtdf.xT, statistic='sum', bins=(16, 12), normalize=False)
+    bin_statistic = pitch.bin_statistic(xtdf.start_x, xtdf.start_y, values=xtdf.xT, statistic='sum', bins=(12, 9), normalize=False)
     pitch.heatmap(bin_statistic, edgecolor='None', ax=ax, alpha=0.65,
-            cmap=LinearSegmentedColormap.from_list('', [lighten_hex_color(country_colors[team], 0.8), country_colors[team]], N=20))
+            cmap=LinearSegmentedColormap.from_list('', ["#f3f9ff", darken_hex_color(country_colors[team], 0.3)], N=20))
 
     if not inverse:
         pitch.annotate(text='The direction of play  ', xytext=(45, 84), xy=(85, 84), ha='center', va='center', ax=ax,

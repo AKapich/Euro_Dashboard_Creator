@@ -74,6 +74,15 @@ def lighten_hex_color(hex_color, percentage):
     return "#{:02x}{:02x}{:02x}".format(r, g, b)
 
 
+def darken_hex_color(hex_color, percentage):
+    hex_color = hex_color.lstrip('#')
+    r, g, b = int(hex_color[0:2], 16), int(hex_color[2:4], 16), int(hex_color[4:6], 16)
+    r, g, b = int(r * (1 - percentage)), int(g * (1 - percentage)), int(b * (1 - percentage))
+    r, g, b = max(0, int(r)), max(0, int(g)), max(0, int(b))
+    
+    return "#{:02x}{:02x}{:02x}".format(r, g, b)
+
+
 def get_players_xT(match_id):
     xT = pd.read_csv("https://raw.githubusercontent.com/AKapich/WorldCup_App/main/app/xT_Grid.csv", header=None)
     xT = np.array(xT)
@@ -93,7 +102,7 @@ def get_players_xT(match_id):
         df[f'end_{type.lower()}_y_bin'] = pd.cut(df['end_x'], bins=xT_rows, labels=False)
         df['start_zone_value'] = df[[f'start_{type.lower()}_x_bin', f'start_{type.lower()}_y_bin']].apply(lambda z: xT[z[1]][z[0]], axis=1)
         df['end_zone_value'] = df[[f'end_{type.lower()}_x_bin', f'end_{type.lower()}_y_bin']].apply(lambda z: xT[z[1]][z[0]], axis=1)
-        df[f'{type.lower()}_xT'] = df['start_zone_value']-df['end_zone_value']
+        df[f'{type.lower()}_xT'] = df['end_zone_value']-df['start_zone_value']
 
         return df[['player', f'{type.lower()}_xT']]
 
@@ -124,7 +133,7 @@ def get_xT(events, type, momentum=False):
     df[f'end_y_bin'] = pd.cut(df['end_x'], bins=xT_rows, labels=False)
     df['start_zone_value'] = df[[f'start_x_bin', f'start_y_bin']].apply(lambda z: xT[z[1]][z[0]], axis=1)
     df['end_zone_value'] = df[[f'end_x_bin', f'end_y_bin']].apply(lambda z: xT[z[1]][z[0]], axis=1)
-    df['xT'] = df['start_zone_value']-df['end_zone_value']
+    df['xT'] = df['end_zone_value']-df['start_zone_value']
     
     if not momentum:
         return df[['xT', 'start_x', 'start_y', 'end_x', 'end_y', 'type']]
