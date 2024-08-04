@@ -161,7 +161,7 @@ def passing_network(match_id, team, ax, inverse=False):
         pitch.arrows(passes_between.x, passes_between.y,
                         passes_between.x_end, passes_between.y_end,
                         color='#d4d4d4',
-                        alpha=pd.to_numeric(passes_between["pass_count"], downcast="float")/max(passes_between["pass_count"]),
+                        alpha=(pd.to_numeric(passes_between["pass_count"], downcast="float")/20).clip(upper=1),
                         ax=ax
                     )
         pitch.scatter(average_location.x, average_location.y,
