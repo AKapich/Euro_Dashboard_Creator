@@ -10,19 +10,19 @@ match_dict = {home+' - '+away: match_id
                  in zip(matches['match_id'], matches['home_team'], matches['away_team'])}
 
 
-@st.cache_data(ttl=600)
+@st.cache_data(ttl=600, show_spinner=False)
 def fetch_match_data(match_id):
     return sb.events(match_id=match_id)
 
-@st.cache_data(ttl=600)
+@st.cache_data(ttl=600, show_spinner=False)
 def fetch_match_pass_data(match_id):
     return sb.events(match_id=match_id, split=True, flatten_attrs=False)["passes"]
 
-@st.cache_data(ttl=600)
+@st.cache_data(ttl=600, show_spinner=False)
 def fetch_match_shot_data(match_id):
     return sb.events(match_id=match_id, split=True, flatten_attrs=False)["shots"]
 
-@st.cache_data(ttl=600)
+@st.cache_data(ttl=600, show_spinner=False)
 def fetch_match_split_data(match_id):
     return sb.events(match_id=match_id, split=True, flatten_attrs=False)
 

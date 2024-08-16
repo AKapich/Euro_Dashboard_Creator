@@ -35,6 +35,7 @@ middle_charts = ["None", "Overview", 'xT Momentum', 'xG Flow', "Voronoi Diagram"
 tab1, tab2 = st.tabs(["Creator Menu", "Dashboard Overview"])
 
 with tab1:
+    symmetrical = st.checkbox('Symmetrical Layout')
     n_rows = st.slider('Number of Rows', 2, 5, 3)
     n_rows += 1
     cols = st.columns(3) 
@@ -45,8 +46,12 @@ with tab1:
             with cols[j]:
                 if j == 1:
                     selected_options[i][j] = st.selectbox(f'Row {i} & Column {j + 1}', middle_charts)
-                else:
-                    selected_options[i][j] = st.selectbox(f'Row {i} & Column {j + 1}', side_charts)
+                elif not symmetrical:
+                        selected_options[i][j] = st.selectbox(f'Row {i} & Column {j + 1}', side_charts)
+                elif j ==0:
+                    selected_options[i][0] = st.selectbox(f'Row {i} & Columns 1, 3', side_charts)
+                    selected_options[i][2] = selected_options[i][0]
+
     st.markdown('---')
 
 with tab2: 
